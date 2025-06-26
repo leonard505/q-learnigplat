@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Aprendizaje por Refuerzo: Q-Learning</title>
+    <style>
+        :root {
+            --primary: #00c3ff;
+            --secondary: #ff00c8;
+            --tertiary: #00ff8f;
+            --background: #121212;
+            --text: #ffffff;
+            --highlight: #ffcc00;
+            --section: #1e1e1e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--highlight), var(--tertiary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: titlePulse 3s infinite;
+        }
+        
+        @keyframes titlePulse {
+            0% {
+                text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
+            }
+            50% {
+                text-shadow: 0 0 20px rgba(255, 204, 0, 0.9), 0 0 30px rgba(255, 204, 0, 0.5);
+            }
+            100% {
+                text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
+            }
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: var(--background);
+            clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+        }
+        
+        nav {
+            background-color: rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            padding: 0.5rem 0;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--highlight);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--highlight);
+            transition: width 0.3s;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        section {
+            margin: 3rem 0;
+            background-color: var(--section);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: translateY(50px);
+            opacity: 0;
+            animation: fadeInUp 0.8s forwards;
+        }
+        
+        .section-heading {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-heading::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 50px;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-radius: 2px;
+            transition: width 0.5s;
+        }
+        
+        section:hover .section-heading::after {
+            width: 100%;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        .concept-box {
+            background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.9));
+            border-left: 4px solid var(--tertiary);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .concept-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 255, 143, 0.3);
+        }
+        
+        .concept-title {
+            color: var(--tertiary);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .code-block {
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            border-left: 4px solid var(--primary);
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .subsection {
+            margin: 2rem 0;
+        }
+        
+        .subsection-heading {
+            color: var(--secondary);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .parameter {
+            display: flex;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            border-left: 3px solid var(--highlight);
+        }
+        
+        .parameter-name {
+            flex: 0 0 150px;
+            font-weight: bold;
+            color: var(--highlight);
+        }
+        
+        .parameter-description {
+            flex: 1;
+        }
+        
+        .experiment-card {
+            background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.9));
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-top: 3px solid var(--primary);
+            transition: transform 0.3s;
+        }
+        
+        .experiment-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .experiment-title {
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .application-box {
+            padding: 1.5rem;
+            margin: 1rem 0;
+            background: linear-gradient(to right, rgba(0, 195, 255, 0.1), rgba(0, 255, 143, 0.1));
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .application-title {
+            color: var(--highlight);
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        footer {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 5rem;
+            position: relative;
+        }
+        
+        .footer-wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            transform: rotate(180deg);
+            background: var(--background);
+            clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+        }
+        
+        .footer-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .resources {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .resource-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .resource-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .resource-title {
+            color: var(--highlight);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .glow {
+            text-shadow: 0 0 10px var(--primary);
+        }
+        
+        .highlight-text {
+            color: var(--highlight);
+            font-weight: bold;
+        }
+        
+        .formula {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 1.5rem 0;
+            color: var(--tertiary);
+            border: 1px dashed var(--tertiary);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Aprendizaje por Refuerzo</h1>
+            <p class="subtitle">Guía definitiva de Q-Learning y sus aplicaciones</p>
+        </div>
+        <div class="wave"></div>
+    </header>
+    
+    <nav>
+        <div class="nav-container">
+            <div class="logo">QLearn</div>
+            <div class="nav-links">
+                <a href="#fundamentos">Fundamentos</a>
+                <a href="#algoritmo">Algoritmo</a>
+                <a href="#estructura">Estructura</a>
+                <a href="#parametros">Parámetros</a>
+                <a href="#experimentos">Experimentos</a>
+                <a href="#mejoras">Mejoras</a>
+                <a href="#aplicaciones">Aplicaciones</a>
+                <a href="#recursos">Recursos</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <section id="fundamentos">
+            <h2 class="section-heading">Conceptos Fundamentales</h2>
+            
+            <p>El aprendizaje por refuerzo es un paradigma de aprendizaje automático donde un agente aprende a tomar decisiones interactuando con un entorno. A diferencia del aprendizaje supervisado donde se proporcionan ejemplos etiquetados, aquí el agente aprende mediante prueba y error basándose en recompensas.</p>
+            
+            <div class="concept-box">
+                <div class="concept-title">Componentes Esenciales</div>
+                <ul>
+                    <li><span class="highlight-text">Agente:</span> La entidad que toma decisiones y aprende.</li>
+                    <li><span class="highlight-text">Entorno:</span> El "mundo" donde el agente opera.</li>
+                    <li><span class="highlight-text">Estados (S):</span> Las diferentes situaciones en las que puede encontrarse el agente.</li>
+                    <li><span class="highlight-text">Acciones (A):</span> Lo que el agente puede hacer.</li>
+                    <li><span class="highlight-text">Recompensas (R):</span> El feedback numérico que recibe el agente después de cada acción.</li>
+                    <li><span class="highlight-text">Política (π):</span> La estrategia que sigue el agente para decidir qué acción tomar en cada estado.</li>
+                </ul>
+            </div>
+            
+            <p>El objetivo del aprendizaje por refuerzo es encontrar una política óptima que maximice la recompensa acumulada a largo plazo, no solo la inmediata.</p>
+        </section>
+        
+        <section id="algoritmo">
+            <h2 class="section-heading">Algoritmo Q-Learning en Detalle</h2>
+            
+            <p>Q-Learning es un algoritmo de aprendizaje por refuerzo que aprende el valor de una acción en un estado particular. La "Q" se refiere a la "calidad" de una acción en un estado determinado.</p>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">La Tabla Q</h3>
+                <ul>
+                    <li>Una matriz donde las filas representan estados y las columnas representan acciones.</li>
+                    <li>Cada celda Q(s,a) contiene el valor esperado de tomar la acción a en el estado s.</li>
+                    <li>Al principio se inicializa con valores arbitrarios (normalmente pequeños y aleatorios).</li>
+                </ul>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">La Ecuación de Actualización de Q</h3>
+                <p>La fórmula fundamental de Q-Learning:</p>
+                
+                <div class="formula">
+                    Q(s,a) = Q(s,a) + α * [R + γ * max(Q(s',a')) - Q(s,a)]
+                </div>
+                
+                <p>Donde:</p>
+                <ul>
+                    <li>Q(s,a) es el valor actual</li>
+                    <li>α (alpha) es la tasa de aprendizaje</li>
+                    <li>R es la recompensa inmediata</li>
+                    <li>γ (gamma) es el factor de descuento para recompensas futuras</li>
+                    <li>max(Q(s',a')) es el mejor valor para el siguiente estado s'</li>
+                    <li>[R + γ * max(Q(s',a')) - Q(s,a)] es el "error de diferencia temporal"</li>
+                </ul>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Exploración vs. Explotación</h3>
+                <div class="concept-box">
+                    <div class="concept-title">Balance Crítico</div>
+                    <ul>
+                        <li><span class="highlight-text">Exploración:</span> Probar acciones nuevas para descubrir mejores estrategias.</li>
+                        <li><span class="highlight-text">Explotación:</span> Usar el conocimiento actual para maximizar recompensas.</li>
+                    </ul>
+                    <p>El equilibrio se gestiona mediante la estrategia ε-greedy (epsilon-greedy):</p>
+                    <ul>
+                        <li>Con probabilidad ε, elegimos una acción aleatoria (exploración).</li>
+                        <li>Con probabilidad 1-ε, elegimos la acción con mayor valor Q (explotación).</li>
+                        <li>El valor de ε normalmente decrece con el tiempo (menos exploración al final).</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <section id="estructura">
+            <h2 class="section-heading">Estructura del Proyecto</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Clase EntornoCuadricula</h3>
+                <div class="concept-box">
+                    <div class="concept-title">El Mundo del Agente</div>
+                    <p>Representa el mundo donde opera el agente y gestiona:</p>
+                    <ul>
+                        <li>Posiciones (agente, meta, obstáculos)</li>
+                        <li>Lógica de movimiento</li>
+                        <li>Sistema de recompensas</li>
+                        <li>Reinicio del entorno</li>
+                        <li>Visualización</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Clase AgenteQLearning</h3>
+                <div class="concept-box">
+                    <div class="concept-title">El Cerebro del Sistema</div>
+                    <p>Implementa el algoritmo Q-Learning y contiene:</p>
+                    <ul>
+                        <li>La tabla Q</li>
+                        <li>Política de selección de acciones (ε-greedy)</li>
+                        <li>Lógica de aprendizaje (actualización de Q)</li>
+                        <li>Gestión de los parámetros de aprendizaje</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Funciones Auxiliares</h3>
+                <ul>
+                    <li><span class="highlight-text">entrenar_agente():</span> Coordina el proceso de entrenamiento.</li>
+                    <li><span class="highlight-text">plot_resultados():</span> Visualiza el progreso del aprendizaje.</li>
+                    <li><span class="highlight-text">mostrar_politica():</span> Representa gráficamente la política aprendida.</li>
+                    <li><span class="highlight-text">demostrar_agente():</span> Muestra el comportamiento del agente entrenado.</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="parametros">
+            <h2 class="section-heading">Parámetros Clave y su Impacto</h2>
+            
+            <div class="parameter">
+                <div class="parameter-name">Tasa de Aprendizaje (α, alpha)</div>
+                <div class="parameter-description">
+                    <p><span class="highlight-text">Valor bajo (0.01-0.1):</span> Aprendizaje lento pero estable. Bueno para entornos deterministas.</p>
+                    <p><span class="highlight-text">Valor alto (0.5-0.9):</span> Aprendizaje rápido pero potencialmente inestable. Puede ser útil al principio.</p>
+                    <p><span class="highlight-text">Impacto:</span> Controla cuánto influyen las nuevas experiencias en el conocimiento actual.</p>
+                </div>
+            </div>
+            
+            <div class="parameter">
+                <div class="parameter-name">Factor de Descuento (γ, gamma)</div>
+                <div class="parameter-description">
+                    <p><span class="highlight-text">Valor bajo (0.1-0.5):</span> Prioriza recompensas inmediatas. Agente "miope".</p>
+                    <p><span class="highlight-text">Valor alto (0.9-0.99):</span> Valora recompensas futuras. Agente "con visión de futuro".</p>
+                    <p><span class="highlight-text">Impacto:</span> Define cuánto importan las recompensas futuras versus las inmediatas.</p>
+                </div>
+            </div>
+            
+            <div class="parameter">
+                <div class="parameter-name">Epsilon Inicial y Decaimiento</div>
+                <div class="parameter-description">
+                    <p><span class="highlight-text">Epsilon inicial alto (0.9-1.0):</span> Mucha exploración al principio.</p>
+                    <p><span class="highlight-text">Decaimiento lento (0.99-0.999):</span> Exploración sostenida por más tiempo.</p>
+                    <p><span class="highlight-text">Impacto:</span> Controla el balance exploración-explotación a lo largo del tiempo.</p>
+                </div>
+            </div>
+            
+            <div class="parameter">
+                <div class="parameter-name">Esquema de Recompensas</div>
+                <div class="parameter-description">
+                    <p><span class="highlight-text">Recompensas espaciadas:</span> Problema del crédito retrasado, aprendizaje más difícil.</p>
+                    <p><span class="highlight-text">Recompensas frecuentes:</span> Aprendizaje más rápido pero puede llevar a óptimos locales.</p>
+                    <p><span class="highlight-text">Impacto:</span> Define qué comportamientos se refuerzan y cuán difícil es el aprendizaje.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="experimentos">
+            <h2 class="section-heading">Experimentos Sugeridos</h2>
+            
+            <div class="experiment-card floating">
+                <h3 class="experiment-title">Modificación de Parámetros</h3>
+                <ul>
+                    <li>Prueba diferentes valores de α, γ y ε.</li>
+                    <li>Registra cómo afecta a la velocidad de aprendizaje y la política final.</li>
+                    <li>Compara las curvas de aprendizaje.</li>
+                </ul>
+            </div>
+            
+            <div class="experiment-card">
+                <h3 class="experiment-title">Alteración del Entorno</h3>
+                <ul>
+                    <li>Cambia el tamaño de la cuadrícula.</li>
+                    <li>Modifica la disposición de los obstáculos.</li>
+                    <li>Añade múltiples metas con diferentes recompensas.</li>
+                    <li>Crea "zonas de peligro" con pequeñas penalizaciones.</li>
+                </ul>
+            </div>
+            
+            <div class="experiment-card floating">
+                <h3 class="experiment-title">Modificación del Esquema de Recompensas</h3>
+                <ul>
+                    <li>Prueba con recompensas en función de la distancia a la meta.</li>
+                    <li>Implementa recompensas negativas por cada paso (para incentivar rutas cortas).</li>
+                    <li>Introduce recompensas por explorar nuevas áreas.</li>
+                </ul>
+            </div>
+            
+            <div class="experiment-card">
+                <h3 class="experiment-title">Comparación con Otros Algoritmos</h3>
+                <ul>
+                    <li>Implementa SARSA y compara con Q-Learning.</li>
+                    <li>Prueba versiones con memoria (considerar últimos n estados).</li>
+                    <li>Experimenta con actualización doble de Q (para reducir sesgo optimista).</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="mejoras">
+            <h2 class="section-heading">Mejoras y Expansiones</h2>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Mejoras Algorítmicas</h3>
+                <ol>
+                    <li><span class="highlight-text">Q-Learning con Elegibilidad:</span> Propaga la actualización a estados visitados recientemente.</li>
+                    <li><span class="highlight-text">Deep Q-Learning:</span> Usa redes neuronales para aproximar la función Q (útil para espacios de estados grandes).</li>
+                    <li><span class="highlight-text">Prioritized Experience Replay:</span> Da prioridad a experiencias con mayor error de TD.</li>
+                    <li><span class="highlight-text">Double Q-Learning:</span> Reduce sobreestimación usando dos tablas Q.</li>
+                </ol>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Expansiones del Entorno</h3>
+                <ol>
+                    <li><span class="highlight-text">Entornos Dinámicos:</span> Obstáculos que se mueven o aparecen/desaparecen.</li>
+                    <li><span class="highlight-text">Información Parcial:</span> El agente solo ve una parte del entorno.</li>
+                    <li><span class="highlight-text">Multiagente:</span> Varios agentes interactuando en el mismo entorno.</li>
+                    <li><span class="highlight-text">Entornos 3D:</span> Añadir una dimensión más para navegación.</li>
+                </ol>
+            </div>
+            
+            <div class="subsection">
+                <h3 class="subsection-heading">Mejoras en la Implementación</h3>
+                <ol>
+                    <li><span class="highlight-text">Paralelización:</span> Entrenar múltiples agentes simultáneamente.</li>
+                    <li><span class="highlight-text">Interfaz Gráfica:</span> Crear una UI para facilitar experimentación.</li>
+                    <li><span class="highlight-text">Persistencia:</span> Guardar/cargar modelos entrenados.</li>
+                    <li><span class="highlight-text">Telemetría:</span> Añadir métricas detalladas sobre el aprendizaje.</li>
+                </ol>
+            </div>
+        </section>
+        
+        <section id="aplicaciones">
+            <h2 class="section-heading">Ejemplos de Aplicaciones Reales</h2>
+            
+            <div class="application-box">
+                <h3 class="application-title">Robótica</h3>
+                <ul>
+                    <li><span class="highlight-text">Navegación autónoma:</span> Robots que aprenden a moverse en entornos dinámicos.</li>
+                    <li><span class="highlight-text">Manipulación:</span> Brazos robóticos que aprenden a coger objetos.</li>
+                </ul>
+            </div>
+            
+            <div class="application-box">
+                <h3 class="application-title">Videojuegos</h3>
+                <ul>
+                    <li><span class="highlight-text">NPCs adaptativos:</span> Personajes que aprenden patrones de juego.</li>
+                    <li><span class="highlight-text">Balanceo automático:</span> Ajuste de dificultad basado en rendimiento del jugador.</li>
+                </ul>
+            </div>
+            
+            <div class="application-box">
+                <h3 class="application-title">Optimización de Sistemas</h3>
+                <ul>
+                    <li><span class="highlight-text">Control de tráfico:</span> Gestión dinámica de semáforos.</li>
+                    <li><span class="highlight-text">Asignación de recursos:</span> Distribución eficiente en sistemas informáticos.</li>
+                </ul>
+            </div>
+            
+            <div class="application-box">
+                <h3 class="application-title">Finanzas</h3>
+                <ul>
+                    <li><span class="highlight-text">Trading algorítmico:</span> Estrategias de compra/venta adaptativas.</li>
+                    <li><span class="highlight-text">Gestión de riesgos:</span> Decisiones óptimas bajo incertidumbre.</li>
+                </ul>
+            </div>
+            
+            <div class="application-box">
+                <h3 class="application-title">Medicina</h3>
+                <ul>
+                    <li><span class="highlight-text">Dosificación personalizada:</span> Ajuste de tratamientos.</li>
+                    <li><span class="highlight-text">Sistemas de diagnóstico:</span> Apoyo a decisiones médicas.</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="recursos">
+            <h2 class="section-heading">Recursos Adicionales</h2>
+            
+            <div class="resources">
+                <div class="resource-card">
+                    <h3 class="resource-title">Libros</h3>
+                    <ul>
+                        <li>"Reinforcement Learning: An Introduction" por Richard S. Sutton y Andrew G. Barto</li>
+                        <li>"Deep Reinforcement Learning Hands-On" por Maxim Lapan</li>
+                        <li>"Algorithms for Reinforcement Learning" por Csaba Szepesvári</li>
+                    </ul>
+                </div>
+                
+                <div class="resource-card">
+                    <h3 class="resource-title">Cursos Online</h3>
+                    <ul>
+                        <li>CS234: Reinforcement Learning (Stanford)</li>
+                        <li>Coursera: Reinforcement Learning Specialization (University of Alberta)</li>
+                        <li>David Silver's Reinfor
